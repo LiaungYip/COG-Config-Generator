@@ -1,9 +1,12 @@
 from collections import defaultdict
+from pprint import pprint
 
+import openpyxl
 from lxml import etree
 
 from distribution_helpers import add_standard_attributes, add_debug_display_attributes, add_setting_elements
-
+from excel_table import find_table, get_table_data
+from weighted_list import weighted_list_generator
 
 # Note to self; does lxml automatically escape special characters?
 
@@ -88,7 +91,8 @@ def Veins(params):
     # StandardGen(s)
     # Veins(s)
     # Cloud(s)
-    xml_element = etree.Element("Veins")
+
+
 
     # Create a dictionary that supplies a default value if we ask it for a key/value pair it doesn't have.
     # p = defaultdict(lambda: ":=_default_")
@@ -98,6 +102,13 @@ def Veins(params):
         p[key] = value
     del key, value
 
+    if "Type" in p and p["Type"] == "Preset":
+        xml_element = etree.Element("VeinsPreset")
+    elif "Type" in p and p["Type"] == "Distribution":
+        xml_element = etree.Element("Veins")
+    else:
+        raise ValueError
+
     # Set attributes of parent element.
     add_standard_attributes(xml_element, p["name"], p["seed"], p["inherits"])
 
@@ -105,6 +116,10 @@ def Veins(params):
         xml_element.attrib["branchType"] = p["branchType"]
 
     add_debug_display_attributes(xml_element, p["color"])
+
+    if "Description" in p:
+        desc = etree.SubElement(xml_element,"Description")
+        desc.text = p["Description"]
 
     # Add <Settings> elements.
     setting_names = [
@@ -131,9 +146,26 @@ def Veins(params):
     # In the spreadsheet, these are defined in the column OreBlock in a format like:
     # minecraft:coal_ore,0.99; minecraft:diamond_ore,0.01;
 
+    if "OreBlock" in p:
+        weighted_list_generator(xml_element, "OreBlock", "block", p["OreBlock"])
+
 
 
     # Add <Replaces> elements.
+
+    if "Replaces" in p:
+        weighted_list_generator(xml_element, "Replaces", "block", p["Replaces"])
+
+    if "ReplacesOre" in p:
+        weighted_list_generator(xml_element, "ReplacesOre", "block", p["ReplacesOre"])
+
+    if "ReplacesRegExp" in p:
+        weighted_list_generator(xml_element, "ReplacesRegExp", "block", p["ReplacesRegExp"])
+
+    # Add <Biome> elements.
+
+    if "Biome" in p:
+        weighted_list_generator(xml_element, "Biome", "name", p["Biome"])
 
     # Add <Option*> elements
 
@@ -213,6 +245,7 @@ def Substitute():
 
 
 test_params = {
+    "Type":"Preset",
     "name": "copper",
     "seed": "1234",
     "inherits": "PresetLayeredVeins",
@@ -227,3 +260,20 @@ test_element = Veins(test_params)
 s = (etree.tostring(test_element, pretty_print=True, encoding="unicode"))
 # s = s.decode(encoding="utf-8")
 print(s)
+
+test_file_path = "./Sprocket2 Spreadsheet.xlsx"
+workbook = openpyxl.load_workbook(test_file_path)
+worksheet, my_table = find_table(workbook, "Veins_Presets")
+table_data = get_table_data(worksheet, my_table)
+# pprint(table_data)
+
+for row in table_data:
+    print("----")
+    if all([v is None for v in row.values()]): # empty row
+        continue
+    for k in list(row.keys()):
+        if row[k] is None:
+            del row[k]
+    xml = Veins(row)
+    s = (etree.tostring(xml, pretty_print=True, encoding="unicode"))
+    print(s)

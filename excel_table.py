@@ -3,6 +3,8 @@ from typing import Mapping, Any, List
 
 import openpyxl
 
+from collections import OrderedDict
+
 
 def find_table(workbook: openpyxl.workbook.workbook.Workbook, table_name: str) \
         -> (openpyxl.worksheet.worksheet.Worksheet, openpyxl.worksheet.table.Table):
@@ -59,7 +61,8 @@ def get_table_data(worksheet: openpyxl.worksheet.worksheet.Worksheet,
     data_rows = []
     header = data[0]
     for row in data[1:]:
-        data_rows.append(dict(zip(header, row)))
+        # data_rows.append(dict(zip(header, row)))
+        data_rows.append(OrderedDict(zip(header, row)))
     return data_rows
 
 

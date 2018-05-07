@@ -64,7 +64,9 @@ def add_debug_display_attributes(xml_element, color):
     if color is None:
         return
 
-    assert xml_element.tag in ("StandardGen", "Veins", "Cloud"), ValueError
+    assert xml_element.tag in ("StandardGen", "StandardGenPreset",
+                               "Veins", "VeinsPreset",
+                               "Cloud", "CloudPreset"), ValueError
 
     assert len(color) == 6, \
         ValueError("Colour %s is not 6 hexadecimal characters. Example of correct format: 3366FF." % color)
@@ -133,11 +135,13 @@ def add_setting_elements(p, setting_names, distribution_element):
 
         p_key = setting_name + "_avg"  # example: p_key = MotherlodeSize_avg
         if p[p_key] is not None:
-            setting_element.attrib["avg"] = ":= %s * _default_" % p[p_key]  # i.e. ":= 1.234 * _default_"
+            # setting_element.attrib["avg"] = ":= %s * _default_" % p[p_key]  # i.e. ":= 1.234 * _default_"
+            setting_element.attrib["avg"] = str(p[p_key])
 
         p_key = setting_name + "_range"
         if p[p_key] is not None:
-            setting_element.attrib["range"] = ":= %s * _default_" % p[p_key]
+            # setting_element.attrib["range"] = ":= %s * _default_" % p[p_key]
+            setting_element.attrib["range"] = str(p[p_key])
 
         p_key = setting_name + "_type"
         if p[p_key] is not None:
